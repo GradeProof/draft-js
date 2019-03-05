@@ -28,6 +28,7 @@ const SelectionState = require('SelectionState');
 const generateRandomKey = require('generateRandomKey');
 const gkx = require('gkx');
 const sanitizeDraftText = require('sanitizeDraftText');
+const unsanitizeDraftText = require('unsanitizeDraftText');
 
 const {List, Record, Repeat} = Immutable;
 
@@ -115,7 +116,7 @@ class ContentState extends ContentStateRecord {
   getPlainText(delimiter?: string): string {
     return this.getBlockMap()
       .map(block => {
-        return block ? block.getText() : '';
+        return unsanitizeDraftText(block ? block.getText() : '');
       })
       .join(delimiter || '\n');
   }
