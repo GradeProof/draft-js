@@ -22,11 +22,11 @@ const CharacterMetadata = require('CharacterMetadata');
 const ContentBlock = require('ContentBlock');
 const ContentBlockNode = require('ContentBlockNode');
 const DraftEntity = require('DraftEntity');
-const Immutable = require('immutable');
 const SelectionState = require('SelectionState');
 
 const generateRandomKey = require('generateRandomKey');
 const gkx = require('gkx');
+const Immutable = require('immutable');
 const sanitizeDraftText = require('sanitizeDraftText');
 const unsanitizeDraftText = require('unsanitizeDraftText');
 
@@ -128,7 +128,11 @@ class ContentState extends ContentStateRecord {
 
   hasText(): boolean {
     const blockMap = this.getBlockMap();
-    return blockMap.size > 1 || blockMap.first().getLength() > 0;
+    return (
+      blockMap.size > 1 ||
+      // make sure that there are no zero width space chars
+      escape(blockMap.first().getText()).replace(/%u200B/g, '').length > 0
+    );
   }
 
   createEntity(

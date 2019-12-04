@@ -23,7 +23,6 @@ import type {List} from 'immutable';
 const DraftEditorLeaf = require('DraftEditorLeaf.react');
 const DraftOffsetKey = require('DraftOffsetKey');
 const React = require('React');
-const ReactDOM = require('ReactDOM');
 const Scroll = require('Scroll');
 const Style = require('Style');
 const UnicodeBidi = require('UnicodeBidi');
@@ -34,6 +33,7 @@ const getElementPosition = require('getElementPosition');
 const getScrollPosition = require('getScrollPosition');
 const getViewportDimensions = require('getViewportDimensions');
 const invariant = require('invariant');
+const isHTMLElement = require('isHTMLElement');
 const nullthrows = require('nullthrows');
 
 const SCROLL_BUFFER = 10;
@@ -71,6 +71,8 @@ const isBlockOnSelectionEdge = (
  * appropriate decorator and inline style components.
  */
 class DraftEditorBlock extends React.Component<Props> {
+  _node: ?HTMLDivElement;
+
   shouldComponentUpdate(nextProps: Props): boolean {
     return (
       this.props.block !== nextProps.block ||
@@ -100,7 +102,10 @@ class DraftEditorBlock extends React.Component<Props> {
       return;
     }
 
-    const blockNode = ReactDOM.findDOMNode(this);
+    const blockNode = this._node;
+    if (blockNode == null) {
+      return;
+    }
     const scrollParent = Style.getScrollParent(blockNode);
     const scrollPosition = getScrollPosition(scrollParent);
     let scrollDelta;
@@ -117,12 +122,11 @@ class DraftEditorBlock extends React.Component<Props> {
         );
       }
     } else {
-      invariant(
-        blockNode instanceof HTMLElement,
-        'blockNode is not an HTMLElement',
-      );
+      invariant(isHTMLElement(blockNode), 'blockNode is not an HTMLElement');
       const blockBottom = blockNode.offsetHeight + blockNode.offsetTop;
-      const scrollBottom = scrollParent.offsetHeight + scrollPosition.y;
+      const pOffset = scrollParent.offsetTop + scrollParent.offsetHeight;
+      const scrollBottom = pOffset + scrollPosition.y;
+
       scrollDelta = blockBottom - scrollBottom;
       if (scrollDelta > 0) {
         Scroll.setTop(
@@ -143,6 +147,10 @@ class DraftEditorBlock extends React.Component<Props> {
     return this.props.tree
       .map((leafSet, ii) => {
         const leavesForLeafSet = leafSet.get('leaves');
+        // T44088704
+        if (leavesForLeafSet.size === 0) {
+          return null;
+        }
         const lastLeaf = leavesForLeafSet.size - 1;
         const leaves = leavesForLeafSet
           .map((leaf, jj) => {
@@ -227,7 +235,10 @@ class DraftEditorBlock extends React.Component<Props> {
     });
 
     return (
-      <div data-offset-key={offsetKey} className={className}>
+      <div
+        data-offset-key={offsetKey}
+        className={className}
+        ref={ref => (this._node = ref)}>
         {this._renderChildren()}
       </div>
     );

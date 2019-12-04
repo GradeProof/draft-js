@@ -9,7 +9,6 @@
  * @providesModule unsanitizeDraftText
  * @flow
  */
-
 'use strict';
 
 const REGEX_BLOCK_DELIMITER = new RegExp('\n', 'g');

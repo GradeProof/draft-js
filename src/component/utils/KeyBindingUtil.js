@@ -5,13 +5,15 @@
  * LICENSE file in the root directory of this source tree.
  *
  * @format
- * @flow strict-local
+ * @flow strict
  * @emails oncall+draft_js
  */
 
 'use strict';
 
 const UserAgent = require('UserAgent');
+
+const isSoftNewlineEvent = require('isSoftNewlineEvent');
 
 const isOSX = UserAgent.isPlatform('Mac OS X');
 
@@ -38,6 +40,8 @@ const KeyBindingUtil = {
       ? !!e.metaKey && !e.altKey
       : KeyBindingUtil.isCtrlKeyCommand(e);
   },
+
+  isSoftNewlineEvent,
 };
 
 module.exports = KeyBindingUtil;

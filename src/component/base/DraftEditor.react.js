@@ -33,12 +33,12 @@ const Style = require('Style');
 const UserAgent = require('UserAgent');
 
 const cx = require('cx');
-const emptyFunction = require('emptyFunction');
 const generateRandomKey = require('generateRandomKey');
 const getDefaultKeyBinding = require('getDefaultKeyBinding');
 const getScrollPosition = require('getScrollPosition');
 const gkx = require('gkx');
 const invariant = require('invariant');
+const isHTMLElement = require('isHTMLElement');
 const nullthrows = require('nullthrows');
 
 const isIE = UserAgent.isBrowser('IE');
@@ -136,8 +136,12 @@ class UpdateDraftEditorFlags extends React.Component<{
 class DraftEditor extends React.Component<DraftEditorProps, State> {
   static defaultProps: DraftEditorDefaultProps = {
     blockRenderMap: DefaultDraftBlockRenderMap,
-    blockRendererFn: emptyFunction.thatReturnsNull,
-    blockStyleFn: emptyFunction.thatReturns(''),
+    blockRendererFn: function() {
+      return null;
+    },
+    blockStyleFn: function() {
+      return '';
+    },
     keyBindingFn: getDefaultKeyBinding,
     readOnly: false,
     spellCheck: false,
@@ -298,6 +302,15 @@ class DraftEditor extends React.Component<DraftEditorProps, State> {
         accessibilityID: this._placeholderAccessibilityID,
       };
 
+      /* $FlowFixMe(>=0.112.0 site=mobile) This comment suppresses an error
+       * found when Flow v0.112 was deployed. To see the error delete this
+       * comment and run Flow. */
+      /* $FlowFixMe(>=0.112.0 site=www) This comment suppresses an error found
+       * when Flow v0.112 was deployed. To see the error delete this comment
+       * and run Flow. */
+      /* $FlowFixMe(>=0.112.0 site=www,mobile) This comment suppresses an error
+       * found when Flow v0.112 was deployed. To see the error delete this
+       * comment and run Flow. */
       return <DraftEditorPlaceholder {...placeHolderProps} />;
     }
     return null;
@@ -352,7 +365,6 @@ class DraftEditor extends React.Component<DraftEditorProps, State> {
       customStyleFn,
       editorKey: this._editorKey,
       editorState,
-      key: 'contents' + this.state.contentsKey,
       textDirectionality,
     };
 
@@ -420,7 +432,10 @@ class DraftEditor extends React.Component<DraftEditorProps, State> {
               all DraftEditorLeaf nodes so it's first in postorder traversal.
             */}
             <UpdateDraftEditorFlags editor={this} editorState={editorState} />
-            <DraftEditorContents {...editorContentsProps} />
+            <DraftEditorContents
+              {...editorContentsProps}
+              key={'contents' + this.state.contentsKey}
+            />
           </div>
         </div>
       </div>
@@ -443,7 +458,13 @@ class DraftEditor extends React.Component<DraftEditorProps, State> {
      * ie9-beta-minor-change-list.aspx
      */
     if (isIE) {
-      document.execCommand('AutoUrlDetect', false, false);
+      // editor can be null after mounting
+      // https://stackoverflow.com/questions/44074747/componentdidmount-called-before-ref-callback
+      if (!this.editor) {
+        global.execCommand('AutoUrlDetect', false, false);
+      } else {
+        this.editor.ownerDocument.execCommand('AutoUrlDetect', false, false);
+      }
     }
   }
 
@@ -467,7 +488,7 @@ class DraftEditor extends React.Component<DraftEditorProps, State> {
   ): void => {
     const {editorState} = this.props;
     const alreadyHasFocus = editorState.getSelection().getHasFocus();
-    const editorNode = ReactDOM.findDOMNode(this.editor);
+    const editorNode = this.editor;
 
     if (!editorNode) {
       // once in a while people call 'focus' in a setTimeout, and the node has
@@ -478,10 +499,7 @@ class DraftEditor extends React.Component<DraftEditorProps, State> {
     const scrollParent = Style.getScrollParent(editorNode);
     const {x, y} = scrollPosition || getScrollPosition(scrollParent);
 
-    invariant(
-      editorNode instanceof HTMLElement,
-      'editorNode is not an HTMLElement',
-    );
+    invariant(isHTMLElement(editorNode), 'editorNode is not an HTMLElement');
 
     editorNode.focus();
 
@@ -504,11 +522,11 @@ class DraftEditor extends React.Component<DraftEditorProps, State> {
   };
 
   blur: () => void = (): void => {
-    const editorNode = ReactDOM.findDOMNode(this.editor);
-    invariant(
-      editorNode instanceof HTMLElement,
-      'editorNode is not an HTMLElement',
-    );
+    const editorNode = this.editor;
+    if (!editorNode) {
+      return;
+    }
+    invariant(isHTMLElement(editorNode), 'editorNode is not an HTMLElement');
     editorNode.blur();
   };
 
@@ -520,7 +538,29 @@ class DraftEditor extends React.Component<DraftEditorProps, State> {
    * the active mode.
    */
   setMode: DraftEditorModes => void = (mode: DraftEditorModes): void => {
-    this._handler = handlerMap[mode];
+    const {onPaste, onCut, onCopy} = this.props;
+    const editHandler = {...handlerMap.edit};
+
+    if (onPaste) {
+      /* $FlowFixMe(>=0.111.0) This comment suppresses an error found when Flow
+       * v0.111.0 was deployed. To see the error, delete this comment and run
+       * Flow. */
+      editHandler.onPaste = onPaste;
+    }
+
+    if (onCut) {
+      editHandler.onCut = onCut;
+    }
+
+    if (onCopy) {
+      editHandler.onCopy = onCopy;
+    }
+
+    const handler = {
+      ...handlerMap,
+      edit: editHandler,
+    };
+    this._handler = handler[mode];
   };
 
   exitCurrentMode: () => void = (): void => {

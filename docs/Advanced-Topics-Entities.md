@@ -15,13 +15,13 @@ and
 provide live code examples to help clarify how entities can be used, as well
 as their built-in behavior.
 
-The [Entity API Reference](/docs/api-reference-entity.html) provides
+The [Entity API Reference](/docs/api-reference-entity) provides
 details on the static methods to be used when creating, retrieving, or updating
 entity objects.
 
 For information about recent changes to the Entity API, and examples of how to
 update your application,
-[see our v0.10 API Migration Guide](/docs/v0-10-api-migration.html#content).
+[see our v0.10 API Migration Guide](/docs/v0-10-api-migration#content).
 
 ## Introduction
 
@@ -44,8 +44,8 @@ ranges. (We are currently deprecating a previous API for accessing Entities; see
 issue
 [#839](https://github.com/facebook/draft-js/issues/839).)
 
-Using [decorators](/docs/advanced-topics-decorators.html) or
-[custom block components](/docs/advanced-topics-block-components.html), you can
+Using [decorators](/docs/advanced-topics-decorators) or
+[custom block components](/docs/advanced-topics-block-components), you can
 add rich rendering to your editor based on entity metadata.
 
 ## Creating and Retrieving Entities
@@ -77,9 +77,9 @@ the `getEntityAt()` method on a `ContentBlock` object, passing in the target
 offset value.
 
 ```js
+const contentState = editorState.getCurrentContent();
 const blockWithLinkAtBeginning = contentState.getBlockForKey('...');
 const linkKey = blockWithLinkAtBeginning.getEntityAt(0);
-const contentState = editorState.getCurrentContent();
 const linkInstance = contentState.getEntity(linkKey);
 const {url} = linkInstance.getData();
 ```
@@ -100,8 +100,7 @@ from the text. Entities with this mutability type are effectively atomic.
 
 For instance, in a Facebook input, add a mention for a Page (e.g. Barack Obama).
 Then, either add a character within the mentioned text, or try to delete a character.
-Note that when adding characters, the entity is removed, and when deleting character,
-the entire entity is removed.
+Note that when adding or deleting characters, the entity is removed.
 
 This mutability value is useful in cases where the text absolutely must match
 its relevant metadata, and may not be altered.
